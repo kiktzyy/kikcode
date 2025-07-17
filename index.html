@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Versi Randue Duit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f7f8;
+      --sidebar-bg: #e6e6e9;
+      --chat-bg: #fff;
+      --user-bubble: #005fcc;
+      --user-text: #fff;
+      --ai-bubble: #e6e6e9;
+      --ai-text: #222;
+      --border: #d1d1d6;
+      --input-bg: #f2f2f7;
+      --input-border: #d1d1d6;
+      --send-btn: #19c37d;
+      --send-btn-hover: #1a8870;
+      --text-primary: #222;
+      --text-secondary: #555;
+      --sidebar-width: 260px;
+    }
+    body.dark {
+      --bg: #343541;
+      --sidebar-bg: #202123;
+      --chat-bg: #343541;
+      --user-bubble: #005fcc;
+      --user-text: #fff;
+      --ai-bubble: #444654;
+      --ai-text: #ececf1;
+      --border: #565869;
+      --input-bg: #40414f;
+      --input-border: #565869;
+      --send-btn: #19c37d;
+      --send-btn-hover: #1a8870;
+      --text-primary: #ececf1;
+      --text-secondary: #8e8ea0;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+    .app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-toggle-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .sidebar-toggle-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .new-chat-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .new-chat-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .sidebar-menu {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+    }
+    .menu-item {
+      padding: 10px 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .menu-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+    .menu-item.active {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+    /* Main Chat Area */
+    .main-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--chat-bg);
+      position: relative;
+    }
+    .chat-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .menu-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+    }
+    .menu-toggle:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .menu-toggle .icon {
+      transition: transform 0.3s ease;
+    }
+    .sidebar.collapsed + .main-chat .menu-toggle .icon {
+      transform: rotate(180deg);
+    }
+    .chat-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--send-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+    }
+    /* Chat Messages */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .message {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .message:last-child {
+      border-bottom: none;
+    }
+    .message-content {
+      max-width: 768px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 16px;
+    }
+    .message-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .message.user .message-avatar {
+      background: var(--user-bubble);
+      color: white;
+    }
+    .message.ai .message-avatar {
+      background: var(--send-btn);
+      color: white;
+    }
+    .message-text {
+      flex: 1;
+      line-height: 1.6;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+    /* Input Area */
+    .input-area {
+      padding: 24px;
+      border-top: 1px solid var(--border);
+      background: var(--chat-bg);
+    }
+    .input-container {
+      max-width: 768px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .chat-input {
+      width: 100%;
+      padding: 12px 50px 12px 16px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 16px;
+      resize: none;
+      min-height: 52px;
+      max-height: 200px;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-input::placeholder {
+      color: var(--text-secondary);
+    }
+    .send-btn {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      background: var(--send-btn);
+      border: none;
+      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .send-btn:hover {
+      background: var(--send-btn-hover);
+    }
+    .send-btn:disabled {
+      background: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    /* Loading Animation */
+    .loading-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 20px 0;
+    }
+    .loading-dots .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: loading 1.4s infinite ease-in-out;
+    }
+    .loading-dots .dot:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots .dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes loading {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+        width: 220px;
+        transform: translateX(-100%);
+      }
+      .sidebar:not(.collapsed) {
+        transform: translateX(0);
+      }
+      .main-chat {
+        width: 100vw;
+        margin-left: 0;
+      }
+      .chat-header {
+        padding: 12px 12px;
+      }
+      .input-area {
+        padding: 12px;
+      }
+      .message-content {
+        padding: 0 8px;
+      }
+      .input-container {
+        max-width: 100vw;
+      }
+    }
+    @media (max-width: 600px) {
+      html, body {
+        font-size: 15px;
+      }
+      .sidebar {
+        width: 80vw;
+        min-width: 180px;
+        max-width: 95vw;
+      }
+      .sidebar-header {
+        padding: 10px;
+      }
+      .sidebar-menu {
+        padding: 4px;
+      }
+      .main-chat {
+        width: 100vw;
+        min-width: 0;
+      }
+      .chat-header {
+        padding: 8px 6px;
+        font-size: 15px;
+      }
+      .chat-title {
+        font-size: 16px;
+      }
+      .input-area {
+        padding: 8px;
+      }
+      .input-container {
+        max-width: 100vw;
+      }
+      .chat-input {
+        font-size: 15px;
+        min-height: 44px;
+        padding: 10px 44px 10px 10px;
+      }
+      .send-btn {
+        width: 28px;
+        height: 28px;
+        right: 4px;
+        bottom: 4px;
+        font-size: 16px;
+      }
+      .message-content {
+        gap: 8px;
+        padding: 0 4px;
+      }
+      .message-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+      }
+      .message-text {
+        font-size: 15px;
+      }
+      #library-modal > div, #settings-modal > div {
+        min-width: 90vw;
+        max-width: 98vw;
+        padding: 12px 6px 8px 6px;
+      }
+    }
+    @media (max-width: 400px) {
+      html, body {
+        font-size: 13px;
+      }
+      .sidebar {
+        min-width: 120px;
+        width: 95vw;
+      }
+      .chat-title {
+        font-size: 14px;
+      }
+      .message-text {
+        font-size: 13px;
+      }
+      .chat-input {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Sembunyikan/Show Sidebar" style="margin-bottom:10px;background:transparent;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;">⏴</button>
+        <button class="new-chat-btn" onclick="newChat()">
+          <span>✏️</span>
+          New chat
+        </button>
+      </div>
+      <div class="sidebar-menu">
+        <div style="padding: 8px 12px 0 12px;">
+          <input id="search-chat-input" type="text" placeholder="Cari chat..." style="width:100%;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:14px;outline:none;" oninput="renderSearchResults()" />
+        </div>
+        <div id="search-results" style="padding:0 12px 8px 12px;"></div>
+        <div class="menu-item" onclick="showLibrary()">
+          <span>📚</span>
+          Library
+        </div>
+        <div class="menu-item" onclick="showSettings()">
+          <span>⚙️</span>
+          Settings
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="main-chat">
+      <div class="chat-header">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+          <span class="icon">☰</span>
+        </button>
+        <div class="chat-title">KiK AI</div>
+        <div class="user-info">
+          <button class="toggle-theme-btn" id="toggle-theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode" style="margin-left:8px;background:transparent;border:none;color:var(--text-primary);font-size:18px;cursor:pointer;">🌙</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be added here -->
+      </div>
+
+      <div class="input-area">
+        <div class="input-container">
+          <textarea 
+            class="chat-input" 
+            id="chat-input" 
+            placeholder="Send a message..."
+            rows="1"
+          ></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            ➤
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Library -->
+  <div id="library-modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);align-items:center;justify-content:center;">
+    <div style="background:var(--chat-bg);color:var(--text-primary);padding:24px 20px 16px 20px;border-radius:10px;min-width:320px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 4px 24px #0002;position:relative;">
+      <div style="font-weight:600;font-size:18px;margin-bottom:12px;">Library Chat</div>
+      <div id="library-list"></div>
+      <button onclick="closeLibrary()" style="margin-top:18px;padding:7px 18px;border-radius:6px;border:none;background:var(--send-btn);color:#fff;cursor:pointer;">Tutup</button>
+    </div>
+  </div>
+  <!-- Modal Settings -->
+  <div id="settings-modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);align-items:center;justify-content:center;">
+    <div style="background:var(--chat-bg);color:var(--text-primary);padding:24px 20px 16px 20px;border-radius:10px;min-width:320px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 4px 24px #0002;position:relative;">
+      <div style="font-weight:600;font-size:18px;margin-bottom:12px;">Pengaturan</div>
+      <div style="margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="settings-theme-toggle" onchange="settingsToggleTheme()" style="accent-color:var(--send-btn);width:18px;height:18px;">
+          <span id="settings-theme-label">Dark Mode</span>
+        </label>
+      </div>
+      <div style="margin-bottom:16px;">
+        <button onclick="resetAllChat()" style="padding:7px 18px;border-radius:6px;border:none;background:var(--user-bubble);color:#fff;cursor:pointer;">Reset Semua Chat</button>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;">Versi: <b>Web AI 1.0</b></div>
+      <button onclick="closeSettings()" style="margin-top:8px;padding:7px 18px;border-radius:6px;border:none;background:var(--send-btn);color:#fff;cursor:pointer;">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    let messages = [];
+    let isLoading = false;
+
+    // Sidebar toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+      sidebar.classList.toggle('collapsed');
+      if (sidebar.classList.contains('collapsed')) {
+        sidebarToggleBtn.textContent = '⏵';
+      } else {
+        sidebarToggleBtn.textContent = '⏴';
+      }
+      // Simpan preferensi sidebar di localStorage
+      localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+    }
+
+    // Library nyata
+    let chatHistory = [];
+
+    function showLibrary() {
+      // Tidak perlu update chatHistory di sini, hanya tampilkan
+      const modal = document.getElementById('library-modal');
+      const list = document.getElementById('library-list');
+      if (!modal || !list) return;
+      if (chatHistory.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-secondary);font-size:14px;">Belum ada riwayat chat.</div>';
+      } else {
+        list.innerHTML = chatHistory.map((chat, idx) =>
+          `<div style='padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;' onclick='loadChatFromHistory(${idx})'>
+             <b>Chat ${idx+1}</b><br><span style='font-size:13px;color:var(--text-secondary);'>${chat[0]?.content?.slice(0,40) || '(kosong)'}</span>
+           </div>`
+        ).join('');
+      }
+      modal.style.display = 'flex';
+    }
+
+    function closeLibrary() {
+      const modal = document.getElementById('library-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function loadChatFromHistory(idx) {
+      if (!chatHistory[idx]) return;
+      messages = [...chatHistory[idx]];
+      document.getElementById('chat-messages').innerHTML = '';
+      messages.forEach(m => addMessage(m.role === 'assistant' ? 'ai' : m.role, m.content));
+      closeLibrary();
+    }
+
+    // New chat: simpan ke history
+    function newChat() {
+      // Simpan chat lama ke history jika ada minimal 1 pesan
+      if (Array.isArray(messages) && messages.length > 0 && messages.some(m => m && m.content && m.content.trim() !== '')) {
+        chatHistory.push([...messages]);
+        console.log('Chat disimpan ke history:', messages);
+        // Jika Library sedang terbuka, update tampilannya
+        const modal = document.getElementById('library-modal');
+        if (modal && modal.style.display === 'flex') {
+          showLibrary();
+        }
+      }
+      messages = [];
+      document.getElementById('chat-messages').innerHTML = '';
+      document.getElementById('chat-input').value = '';
+      // Highlight efek pada tombol New Chat
+      const btn = document.querySelector('.new-chat-btn');
+      if (btn) {
+        btn.style.background = 'var(--send-btn)';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 350);
+      }
+    }
+
+    // Search chats nyata
+    function renderSearchResults() {
+      const input = document.getElementById('search-chat-input');
+      const resultsDiv = document.getElementById('search-results');
+      if (!input || !resultsDiv) return;
+      const q = input.value.trim().toLowerCase();
+      if (!q) {
+        resultsDiv.innerHTML = '';
+        return;
+      }
+      // Gabungkan semua messages user dan ai
+      const allMsgs = messages.length ? messages : [];
+      const filtered = allMsgs.filter(m => m.content && m.content.toLowerCase().includes(q));
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:6px 0;">Tidak ada hasil.</div>';
+        return;
+      }
+      resultsDiv.innerHTML = filtered.map(m => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:${m.role==='user'?'var(--user-bubble)':'var(--send-btn)'};cursor:pointer;" onclick="showSearchedChat('${encodeURIComponent(m.content)}')">${m.role==='user'?'🧑':'🤖'} ${m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`).join('');
+    }
+    function showSearchedChat(content) {
+      const decoded = decodeURIComponent(content);
+      alert('Isi chat:\n' + decoded);
+    }
+
+    // Show settings nyata
+    function showSettings() {
+      const modal = document.getElementById('settings-modal');
+      const themeToggle = document.getElementById('settings-theme-toggle');
+      const themeLabel = document.getElementById('settings-theme-label');
+      if (!modal || !themeToggle || !themeLabel) return;
+      // Set toggle sesuai mode sekarang
+      const isDark = document.body.classList.contains('dark');
+      themeToggle.checked = isDark;
+      themeLabel.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+      modal.style.display = 'flex';
+    }
+
+    function closeSettings() {
+      const modal = document.getElementById('settings-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function settingsToggleTheme() {
+      const themeToggle = document.getElementById('settings-theme-toggle');
+      const themeLabel = document.getElementById('settings-theme-label');
+      if (!themeToggle || !themeLabel) return;
+      setTheme(themeToggle.checked ? 'dark' : 'light');
+      themeLabel.textContent = themeToggle.checked ? 'Dark Mode' : 'Light Mode';
+    }
+
+    function resetAllChat() {
+      if (confirm('Yakin ingin menghapus semua chat dan riwayat?')) {
+        messages = [];
+        chatHistory = [];
+        document.getElementById('chat-messages').innerHTML = '';
+        closeLibrary();
+        closeSettings();
+        renderSearchResults();
+      }
+    }
+
+    // Add message to chat
+    function addMessage(role, content) {
+      const messagesContainer = document.getElementById('chat-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+      
+      const avatar = role === 'user' ? 'U' : 'AI';
+      const avatarBg = role === 'user' ? 'var(--user-bubble)' : 'var(--send-btn)';
+      
+      // Ganti **teks** jadi <b>teks</b> untuk jawaban AI
+      if (role === 'ai') {
+        // Ganti semua **teks** ke <b>teks</b> (berulang sampai tidak ada ** lagi)
+        while (/\*\*(.*?)\*\*/.test(content)) {
+          content = content.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        }
+        // Hapus sisa ** jika ada
+        content = content.replace(/\*\*/g, '');
+      }
+      messageDiv.innerHTML = `
+        <div class="message-content">
+          <div class="message-avatar" style="background: ${avatarBg}">${avatar}</div>
+          <div class="message-text">${content}</div>
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Add loading animation
+    function addLoading() {
+      const messagesContainer = document.getElementById('chat-messages');
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'message ai';
+      loadingDiv.id = 'loading-message';
+      
+      loadingDiv.innerHTML = `
+        <div class="message-content">
+          <div class="message-avatar" style="background: var(--send-btn)">AI</div>
+          <div class="loading-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+        </div>
+      `;
+      
+      messagesContainer.appendChild(loadingDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Remove loading animation
+    function removeLoading() {
+      const loadingMessage = document.getElementById('loading-message');
+      if (loadingMessage) {
+        loadingMessage.remove();
+      }
+    }
+
+    // Send message
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const sendBtn = document.getElementById('send-btn');
+      const message = input.value.trim();
+      
+      if (!message || isLoading) return;
+      
+      // Jawaban custom untuk pertanyaan tertentu
+      const msgLower = message.toLowerCase();
+      // Deteksi pertanyaan tentang asal usul/pembuat/pengembang
+      if (
+        msgLower.match(/(siapa|asal|pembuat|pengembang|developer|creator|pencipta|yang buat|yang mengembangkan|yang menciptakan|asal usul|buatan siapa|dibuat oleh|dikembangkan oleh|developed by|created by|who made|who created|who developed|who is your creator|who is your developer|who built|who is behind|who is the author|author|founder|founders|founding|found)/) ||
+        msgLower.includes('siapa yang buat') ||
+        msgLower.includes('pembuat') ||
+        msgLower.includes('pengembang') ||
+        msgLower.includes('developer') ||
+        msgLower.includes('creator') ||
+        msgLower.includes('pencipta') ||
+        msgLower.includes('asal usul') ||
+        msgLower.includes('buatan siapa') ||
+        msgLower.includes('dibuat oleh') ||
+        msgLower.includes('dikembangkan oleh') ||
+        msgLower.includes('who made') ||
+        msgLower.includes('who created') ||
+        msgLower.includes('who developed') ||
+        msgLower.includes('who is your creator') ||
+        msgLower.includes('who is your developer') ||
+        msgLower.includes('who built') ||
+        msgLower.includes('who is behind') ||
+        msgLower.includes('who is the author') ||
+        msgLower.includes('author') ||
+        msgLower.includes('founder') ||
+        msgLower.includes('founders') ||
+        msgLower.includes('founding') ||
+        msgLower.includes('found')
+      ) {
+        addMessage('user', message);
+        addMessage('ai', 'Saya dikembangkan oleh Rizki Jati Prasetyo');
+        input.value = '';
+        return;
+      }
+      // Deteksi pertanyaan tentang identitas bot
+      if (msgLower.match(/^(nama )?lu siapa|kamu siapa|siapa kamu/)) {
+        addMessage('user', message);
+        addMessage('ai', 'Aku Bot Aktif');
+        input.value = '';
+        return;
+      }
+      
+      isLoading = true;
+      sendBtn.disabled = true;
+      
+      // Add user message
+      addMessage('user', message);
+      messages.push({ role: 'user', content: message });
+      input.value = '';
+      
+      // Add loading animation
+      addLoading();
+      
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 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',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'ChatGPT Clone',
+          },
+          body: JSON.stringify({
+            model: 'deepseek/deepseek-r1-0528:free',
+            messages: [
+              { role: 'system', content: 'Kamu adalah asisten AI yang menjawab singkat, jelas, dan langsung ke poin dalam bahasa Indonesia. Jangan menjelaskan panjang lebar kecuali diminta. Jika pertanyaan tidak jelas, minta klarifikasi secara singkat. Jika ada kata penting, gunakan <b>teks tebal</b> HTML, bukan tanda bintang. Jika pertanyaan sudah mengandung kata kunci/topik, jawab langsung tanpa meminta klarifikasi.' },
+              { role: 'user', content: message }
+            ]
+          })
+        });
+
+        removeLoading();
+        
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+        
+        const data = await response.json();
+        const aiMessage = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+        
+        addMessage('ai', aiMessage);
+        messages.push({ role: 'assistant', content: aiMessage });
+        
+      } catch (error) {
+        removeLoading();
+        addMessage('ai', 'Sorry, there was an error processing your request.');
+        console.error('Error:', error);
+      } finally {
+        isLoading = false;
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    // Handle Enter key
+    document.getElementById('chat-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Auto-resize textarea
+    document.getElementById('chat-input').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+
+    // Theme toggle
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.body.classList.add('dark');
+        const btn = document.getElementById('toggle-theme-btn');
+        if (btn) btn.textContent = '☀️';
+      } else {
+        document.body.classList.remove('dark');
+        const btn = document.getElementById('toggle-theme-btn');
+        if (btn) btn.textContent = '🌙';
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
+    }
+
+    // Pastikan semua fungsi dijalankan setelah DOM siap
+    window.addEventListener('DOMContentLoaded', function() {
+      // Theme
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      setTheme(savedTheme);
+      // Sidebar
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+      const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === '1';
+      if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        sidebarToggleBtn.textContent = '⏵';
+      } else {
+        sidebar.classList.remove('collapsed');
+        sidebarToggleBtn.textContent = '⏴';
+      }
+      // Tambahkan event listener ke tombol theme jika belum ada
+      const themeBtn = document.getElementById('toggle-theme-btn');
+      if (themeBtn) {
+        themeBtn.onclick = toggleTheme;
+      }
+    });
+  </script>
+</body>
+</html> 
