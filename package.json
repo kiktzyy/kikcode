@@ -1,9 +1,13 @@
 {
   "name": "kikcode",
   "version": "1.0.0",
-  "main": "api/index.js",
+  "description": "API for Kikcode project",
   "scripts": {
     "start": "vercel dev"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14"
+  }
 }
